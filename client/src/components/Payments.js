@@ -25,5 +25,7 @@ export default connect(null, actions)(Payments);
 
 //----------------------------------Notes--------------------------------------
 
+//using https://github.com/azmenak/react-stripe-checkout
+
 //callback function returns an authorization token representing the charge
 //token={token => console.log(token)} //used for testing to see the token
