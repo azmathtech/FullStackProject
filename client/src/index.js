@@ -8,6 +8,9 @@ import reduxThunk from 'redux-thunk';
 import App from './components/App';
 import reducers from './reducers';
 
+import axios from 'axios'; //temp to test sendgrid code
+window.axios = axios; //temp to test sendgrid code
+
 const store = createStore(reducers, {}, applyMiddleware(reduxThunk));
 
 ReactDOM.render(
