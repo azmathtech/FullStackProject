@@ -16,6 +16,13 @@ export const handleToken = token => async dispatch => {
   dispatch({ type: FETCH_USER, payload: res.data });
 };
 
+export const submitSurvey = (values, history) => async dispatch => {
+  const res = await axios.post('/api/surveys', values);
+
+  history.push('/surveys');
+  dispatch({ type: FETCH_USER, payload: res.data });
+};
+
 //----------------------------------Notes--------------------------------------
 //Redux Thunk middleware allows us to pass in a function to our action and
 // pass in the dispatch function.  This allows us to have the action used

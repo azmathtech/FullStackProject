@@ -1,3 +1,6 @@
+const _ = require('lodash');
+const Path = require('path-parser');
+const { URL } = require('url');
 const mongoose = require('mongoose');
 const requireLogin = require('../middlewares/requireLogin');
 const requireCredits = require('../middlewares/requireCredits');
@@ -8,8 +11,42 @@ const surveyTemplate = require('../services/emailTemplates/surveyTemplate');
 const Survey = mongoose.model('surveys');
 
 module.exports = app => {
-  app.get('/api/surveys/thanks', (req, res) => {
+  app.get('/api/surveys/:surveyId/:choice', (req, res) => {
     res.send('Thanks for voting!');
+  });
+
+  app.post('/api/surveys/webhooks', (req, res) => {
+    const p = new Path('/api/surveys/:surveyId/:choice');
+
+    _.chain(req.body) //const events = (only used this for testing, no longer need the events variable)
+      .map(({ email, url }) => {
+        const match = p.test(new URL(url).pathname);
+        if (match) {
+          return { email, surveyId: match.surveyId, choice: match.choice };
+        }
+      })
+      .compact() //removes any undefined element
+      .uniqBy('email', 'surveyId') //removes any duplicate based on email and surveyId
+      .each(({ surveyId, email, choice }) => {
+        Survey.updateOne(
+          {
+            _id: surveyId,
+            recipients: {
+              $elemMatch: { email: email, responded: false }
+            }
+          },
+          {
+            $inc: { [choice]: 1 },
+            $set: { 'recipients.$.responded': true },
+            lastResponded: new Date()
+          }
+        ).exec();
+      })
+      .value();
+
+    //console.log(events);
+
+    res.send({});
   });
 
   app.post('/api/surveys', requireLogin, requireCredits, async (req, res) => {
@@ -60,3 +97,84 @@ module.exports = app => {
 //map(email =>  ({ email }))
 //because we needed to add the trim() function to eleminate white space the
 //shorthand was no longer an option
+
+//Prior to destructuring
+// const events = _.map(req.body, event => {
+//   const pathname = new URL(event.url).pathname;
+//   const p = new Path('/api/surveys/:surveyId/:choice');
+//   //console.log(p.test(pathname));
+//   const match = p.test(pathname);
+//   if (match) {
+//     return {
+//       email: event.email,
+//       surveyId: match.surveyId,
+//       choice: match.choice
+//     };
+//   }
+// });
+
+// ---------------------------------------------------------------------------
+
+//lodash compact function goes through an array and removes any elements that
+//are undefined
+
+// ---------------------------------------------------------------------------
+
+//Prior to refactor/clean up
+// app.post('/api/surveys/webhooks', (req, res) => {
+//   const events = _.map(req.body, ({ email, url }) => {
+//     const pathname = new URL(url).pathname;
+//     const p = new Path('/api/surveys/:surveyId/:choice');
+//     //console.log(p.test(pathname));
+//     const match = p.test(pathname);
+//     if (match) {
+//       return { email, surveyId: match.surveyId, choice: match.choice };
+//     }
+//   });
+//
+//   //console.log(events);
+//   const compactEvents = _.compact(events); //removes any undefined element
+//   const uniqueEvents = _.uniqBy(compactEvents, 'email', 'surveyId'); //removes any duplicate based on email and surveyId
+//
+//   console.log(uniqueEvents);
+//
+//   res.send({});
+// });
+//First phase of refactor
+// app.post('/api/surveys/webhooks', (req, res) => {
+//   const p = new Path('/api/surveys/:surveyId/:choice');
+//
+//   const events = _.map(req.body, ({ email, url }) => {
+//     const match = p.test(new URL(url).pathname);
+//     if (match) {
+//       return { email, surveyId: match.surveyId, choice: match.choice };
+//     }
+//   });
+//
+//   //console.log(events);
+//   const compactEvents = _.compact(events); //removes any undefined element
+//   const uniqueEvents = _.uniqBy(compactEvents, 'email', 'surveyId'); //removes any duplicate based on email and surveyId
+//
+//   console.log(uniqueEvents);
+//
+//   res.send({});
+// });
+//refactor after implementing the lodash chain function
+// app.post('/api/surveys/webhooks', (req, res) => {
+//   const p = new Path('/api/surveys/:surveyId/:choice');
+//
+//   const events = _.chain(req.body)
+//     .map(req.body, ({ email, url }) => {
+//       const match = p.test(new URL(url).pathname);
+//       if (match) {
+//         return { email, surveyId: match.surveyId, choice: match.choice };
+//       }
+//     })
+//     .compact() //removes any undefined element
+//     .uniqBy('email', 'surveyId') //removes any duplicate based on email and surveyId
+//     .value();
+//
+//   console.log(events);
+//
+//   res.send({});
+// });
