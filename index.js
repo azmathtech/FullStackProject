@@ -5,7 +5,7 @@ const passport = require('passport');
 const bodyParser = require('body-parser');
 
 const keys = require('./config/keys');
-require('./models/user'); //just need the file to run, not passing anything
+require('./models/User'); //just need the file to run, not passing anything
 require('./models/Survey');
 require('./services/passport'); //just need the file to run, not passing anything
 
