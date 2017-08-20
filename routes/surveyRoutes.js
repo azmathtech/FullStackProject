@@ -11,6 +11,14 @@ const surveyTemplate = require('../services/emailTemplates/surveyTemplate');
 const Survey = mongoose.model('surveys');
 
 module.exports = app => {
+  app.get('/api/surveys', requireLogin, async (req, res) => {
+    const surveys = await Survey.find({ _user: req.user.id }).select({
+      recipients: false
+    });
+
+    res.send(surveys);
+  });
+
   app.get('/api/surveys/:surveyId/:choice', (req, res) => {
     res.send('Thanks for voting!');
   });
@@ -177,4 +185,27 @@ module.exports = app => {
 //   console.log(events);
 //
 //   res.send({});
+// });
+
+// ---------------------------------------------------------------------------
+//Queries
+//Survey.find({ _user: req.user.id }) returns a query object
+//you can then attach query functions to the end of the query object
+//Survey.find({ _user: req.user.id }).select()
+
+//to include or exclude a value from a query
+// // include a and b, exclude other fields
+// query.select('a b');
+//
+// // exclude c and d, include other fields
+// query.select('-c -d');
+//
+// // or you may use object notation, useful when
+// // you have keys already prefixed with a "-"
+// query.select({ a: 1, b: 1 });
+// query.select({ c: 0, d: 0 });
+
+// actual code example -
+// const surveys = await Survey.find({ _user: req.user.id }).select({
+//   recipients: false
 // });
